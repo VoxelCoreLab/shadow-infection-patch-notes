@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model PatchNote {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  version   String   @unique
+  titel     String
+  inhalt    String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("patch_notes")
+}
