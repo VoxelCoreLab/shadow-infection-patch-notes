@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { RootResponseDto } from './dtos/root-response.dto.js';
 
 @Injectable()
 export class AppService {
-  getRootJson() {
+  getRootJson(): RootResponseDto {
     return {
       name: 'Shadow Infection Patch Notes API',
       docs: '/api',
