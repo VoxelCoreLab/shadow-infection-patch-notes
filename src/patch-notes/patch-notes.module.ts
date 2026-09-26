@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../prisma/prisma.module.js';
+import { PatchNotesController } from './patch-notes.controller.js';
+import { PatchNotesService } from './patch-notes.service.js';
 
-/**
- * Skeleton for patch-notes feature routes (read endpoints in AP 4.1.9).
- * Keeps the module wired so Prisma can be injected when endpoints land.
- */
-@Module({})
+@Module({
+  imports: [PrismaModule],
+  controllers: [PatchNotesController],
+  providers: [PatchNotesService],
+})
 export class PatchNotesModule {}
