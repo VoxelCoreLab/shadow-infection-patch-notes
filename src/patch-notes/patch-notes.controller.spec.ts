@@ -6,8 +6,8 @@ import { PatchNotesService } from './patch-notes.service.js';
 const sampleNote = {
   id: '11111111-1111-4111-8111-111111111111',
   version: '1.2.3',
-  titel: 'Balance',
-  inhalt: 'Damage down.',
+  title: 'Balance',
+  content: 'Damage down.',
   createdAt: new Date('2026-09-25T10:00:00.000Z'),
   updatedAt: new Date('2026-09-25T10:00:00.000Z'),
 };

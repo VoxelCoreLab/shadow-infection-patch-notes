@@ -8,10 +8,10 @@ export class PatchNoteDto {
   version: string;
 
   @ApiProperty({ example: 'Balance Update' })
-  titel: string;
+  title: string;
 
   @ApiProperty({ example: 'Enemy damage reduced by 10%.' })
-  inhalt: string;
+  content: string;
 
   @ApiProperty({ type: String, format: 'date-time' })
   createdAt: Date;

@@ -10,8 +10,8 @@ datasource db {
 model PatchNote {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   version   String   @unique
-  titel     String
-  inhalt    String
+  title     String
+  content   String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
