@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { PatchNotesService } from './patch-notes.service.js';
@@ -12,14 +12,26 @@ const sampleNote = {
   updatedAt: new Date('2026-09-25T10:00:00.000Z'),
 };
 
+const createDto = {
+  version: '1.2.3',
+  title: 'Balance',
+  content: 'Damage down.',
+};
+
 describe('PatchNotesService', () => {
   let service: PatchNotesService;
   const findMany = vi.fn();
   const findUnique = vi.fn();
+  const create = vi.fn();
+  const update = vi.fn();
+  const remove = vi.fn();
 
   beforeEach(async () => {
     findMany.mockReset();
     findUnique.mockReset();
+    create.mockReset();
+    update.mockReset();
+    remove.mockReset();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -27,7 +39,13 @@ describe('PatchNotesService', () => {
         {
           provide: PrismaService,
           useValue: {
-            patchNote: { findMany, findUnique },
+            patchNote: {
+              findMany,
+              findUnique,
+              create,
+              update,
+              delete: remove,
+            },
           },
         },
       ],
@@ -67,6 +85,57 @@ describe('PatchNotesService', () => {
     findUnique.mockResolvedValue(null);
 
     await expect(service.findOne(sampleNote.id)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('creates a note', async () => {
+    create.mockResolvedValue(sampleNote);
+
+    await expect(service.create(createDto)).resolves.toEqual(sampleNote);
+    expect(create).toHaveBeenCalledWith({ data: createDto });
+  });
+
+  it('throws ConflictException when version exists', async () => {
+    create.mockRejectedValue({ code: 'P2002' });
+
+    await expect(service.create(createDto)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+  });
+
+  it('updates a note', async () => {
+    const patched = { ...sampleNote, title: 'Hotfix' };
+    update.mockResolvedValue(patched);
+
+    await expect(
+      service.update(sampleNote.id, { title: 'Hotfix' }),
+    ).resolves.toEqual(patched);
+    expect(update).toHaveBeenCalledWith({
+      where: { id: sampleNote.id },
+      data: { title: 'Hotfix' },
+    });
+  });
+
+  it('throws NotFoundException when updating unknown id', async () => {
+    update.mockRejectedValue({ code: 'P2025' });
+
+    await expect(
+      service.update(sampleNote.id, { title: 'Hotfix' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('deletes a note', async () => {
+    remove.mockResolvedValue(sampleNote);
+
+    await expect(service.remove(sampleNote.id)).resolves.toEqual(sampleNote);
+    expect(remove).toHaveBeenCalledWith({ where: { id: sampleNote.id } });
+  });
+
+  it('throws NotFoundException when deleting unknown id', async () => {
+    remove.mockRejectedValue({ code: 'P2025' });
+
+    await expect(service.remove(sampleNote.id)).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });

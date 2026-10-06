@@ -1,12 +1,29 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
+  ApiConflictResponse,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { CreatePatchNoteDto } from './dto/create-patch-note.dto.js';
 import { FindPatchNotesQueryDto } from './dto/find-patch-notes-query.dto.js';
 import { PatchNoteDto } from './dto/patch-note.dto.js';
+import { UpdatePatchNoteDto } from './dto/update-patch-note.dto.js';
 import { PatchNotesService } from './patch-notes.service.js';
 
 @ApiTags('Patch Notes')
@@ -25,6 +42,15 @@ export class PatchNotesController {
     return this.patchNotesService.findAll(query.version);
   }
 
+  @Post()
+  @ApiOperation({ summary: 'Create a patch note' })
+  @ApiCreatedResponse({ type: PatchNoteDto })
+  @ApiBadRequestResponse({ description: 'Invalid body or version format' })
+  @ApiConflictResponse({ description: 'Version already exists' })
+  create(@Body() dto: CreatePatchNoteDto): Promise<PatchNoteDto> {
+    return this.patchNotesService.create(dto);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get one patch note by id' })
   @ApiOkResponse({ type: PatchNoteDto })
@@ -33,5 +59,28 @@ export class PatchNotesController {
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
   ): Promise<PatchNoteDto> {
     return this.patchNotesService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a patch note' })
+  @ApiOkResponse({ type: PatchNoteDto })
+  @ApiBadRequestResponse({ description: 'Invalid body' })
+  @ApiNotFoundResponse({ description: 'Patch note unknown' })
+  update(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @Body() dto: UpdatePatchNoteDto,
+  ): Promise<PatchNoteDto> {
+    return this.patchNotesService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a patch note' })
+  @ApiOkResponse({ type: PatchNoteDto })
+  @ApiNotFoundResponse({ description: 'Patch note unknown' })
+  remove(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<PatchNoteDto> {
+    return this.patchNotesService.remove(id);
   }
 }
