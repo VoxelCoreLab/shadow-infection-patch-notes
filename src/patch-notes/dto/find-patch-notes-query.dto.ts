@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, Matches } from 'class-validator';
+import { VERSION_PATTERN } from './create-patch-note.dto.js';
 
 export class FindPatchNotesQueryDto {
   @ApiPropertyOptional({
@@ -9,5 +10,8 @@ export class FindPatchNotesQueryDto {
   })
   @IsOptional()
   @IsString()
+  @Matches(VERSION_PATTERN, {
+    message: 'version must be Major.Minor.Patch',
+  })
   version?: string;
 }
