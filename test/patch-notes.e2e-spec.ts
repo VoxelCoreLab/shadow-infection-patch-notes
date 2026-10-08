@@ -130,6 +130,23 @@ describe('PatchNotesController (e2e)', () => {
     expect(remove).toHaveBeenCalledWith({ where: { id: sampleNote.id } });
   });
 
+  it('PATCH /patch-notes/:id returns 404 when note is unknown', async () => {
+    update.mockRejectedValue({ code: 'P2025' });
+
+    await request(app.getHttpServer())
+      .patch(`/patch-notes/${sampleNote.id}`)
+      .send({ title: 'Missing' })
+      .expect(404);
+  });
+
+  it('DELETE /patch-notes/:id returns 404 when note is unknown', async () => {
+    remove.mockRejectedValue({ code: 'P2025' });
+
+    await request(app.getHttpServer())
+      .delete(`/patch-notes/${sampleNote.id}`)
+      .expect(404);
+  });
+
   it('GET /patch-notes returns 400 for invalid version query', async () => {
     await request(app.getHttpServer())
       .get('/patch-notes')
