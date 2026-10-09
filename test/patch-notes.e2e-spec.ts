@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module.js';
+import { FirebaseAuthService } from '../src/auth/firebase-auth.service.js';
 import { configureApp } from '../src/configure-app.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
@@ -21,9 +22,11 @@ const createBody = {
   content: 'Damage down.',
 };
 
+const ADMIN_TOKEN = 'admin-token';
+const USER_TOKEN = 'user-token';
+
 /**
- * TF-13 ohne Auth: Anlegen, Ändern, Löschen, 400 (Format), 409 (Duplikat).
- * JWT/401/403 folgen in AP 4.2.6.
+ * TF-13: Anlegen, Ändern, Löschen inkl. Auth (JWT + admin claim → 401/403).
  */
 describe('PatchNotesController (e2e)', () => {
   let app: INestApplication<App>;
@@ -32,6 +35,7 @@ describe('PatchNotesController (e2e)', () => {
   const create = vi.fn();
   const update = vi.fn();
   const remove = vi.fn();
+  const verifyIdToken = vi.fn();
 
   beforeEach(async () => {
     findMany.mockReset();
@@ -39,6 +43,16 @@ describe('PatchNotesController (e2e)', () => {
     create.mockReset();
     update.mockReset();
     remove.mockReset();
+    verifyIdToken.mockReset();
+    verifyIdToken.mockImplementation(async (token: string) => {
+      if (token === ADMIN_TOKEN) {
+        return { uid: 'admin', admin: true };
+      }
+      if (token === USER_TOKEN) {
+        return { uid: 'user', admin: false };
+      }
+      throw new Error('invalid token');
+    });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -57,6 +71,11 @@ describe('PatchNotesController (e2e)', () => {
         onModuleInit: vi.fn(),
         onModuleDestroy: vi.fn(),
       })
+      .overrideProvider(FirebaseAuthService)
+      .useValue({
+        onModuleInit: vi.fn(),
+        verifyIdToken,
+      })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -68,11 +87,41 @@ describe('PatchNotesController (e2e)', () => {
     await app.close();
   });
 
-  it('POST /patch-notes creates a note (201)', async () => {
+  it('POST /patch-notes returns 401 without token', async () => {
+    await request(app.getHttpServer())
+      .post('/patch-notes')
+      .send(createBody)
+      .expect(401);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('POST /patch-notes returns 401 for invalid token', async () => {
+    await request(app.getHttpServer())
+      .post('/patch-notes')
+      .set('Authorization', 'Bearer invalid')
+      .send(createBody)
+      .expect(401);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('POST /patch-notes returns 403 without admin claim', async () => {
+    await request(app.getHttpServer())
+      .post('/patch-notes')
+      .set('Authorization', `Bearer ${USER_TOKEN}`)
+      .send(createBody)
+      .expect(403);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('POST /patch-notes creates a note with admin JWT (201)', async () => {
     create.mockResolvedValue(sampleNote);
 
     const response = await request(app.getHttpServer())
       .post('/patch-notes')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send(createBody)
       .expect(201);
 
@@ -88,6 +137,7 @@ describe('PatchNotesController (e2e)', () => {
   it('POST /patch-notes returns 400 for invalid version format', async () => {
     await request(app.getHttpServer())
       .post('/patch-notes')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ ...createBody, version: '1.2' })
       .expect(400);
 
@@ -99,6 +149,7 @@ describe('PatchNotesController (e2e)', () => {
 
     await request(app.getHttpServer())
       .post('/patch-notes')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send(createBody)
       .expect(409);
   });
@@ -109,6 +160,7 @@ describe('PatchNotesController (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .patch(`/patch-notes/${sampleNote.id}`)
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ title: 'Hotfix' })
       .expect(200);
 
@@ -124,6 +176,7 @@ describe('PatchNotesController (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .delete(`/patch-notes/${sampleNote.id}`)
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .expect(200);
 
     expect(response.body.id).toBe(sampleNote.id);
@@ -135,6 +188,7 @@ describe('PatchNotesController (e2e)', () => {
 
     await request(app.getHttpServer())
       .patch(`/patch-notes/${sampleNote.id}`)
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ title: 'Missing' })
       .expect(404);
   });
@@ -144,7 +198,19 @@ describe('PatchNotesController (e2e)', () => {
 
     await request(app.getHttpServer())
       .delete(`/patch-notes/${sampleNote.id}`)
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .expect(404);
+  });
+
+  it('GET /patch-notes stays public (no auth)', async () => {
+    findMany.mockResolvedValue([sampleNote]);
+
+    const response = await request(app.getHttpServer())
+      .get('/patch-notes')
+      .expect(200);
+
+    expect(response.body).toHaveLength(1);
+    expect(verifyIdToken).not.toHaveBeenCalled();
   });
 
   it('GET /patch-notes returns 400 for invalid version query', async () => {

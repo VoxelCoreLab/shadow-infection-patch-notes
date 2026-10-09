@@ -1,5 +1,6 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AdminGuard } from '../auth/admin.guard.js';
 import { PatchNotesController } from './patch-notes.controller.js';
 import { PatchNotesService } from './patch-notes.service.js';
 
@@ -41,7 +42,10 @@ describe('PatchNotesController', () => {
           useValue: { findAll, findOne, create, update, remove },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(AdminGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get(PatchNotesController);
   });
