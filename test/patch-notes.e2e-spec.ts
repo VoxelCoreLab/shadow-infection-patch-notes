@@ -88,31 +88,46 @@ describe('PatchNotesController (e2e)', () => {
   });
 
   it('POST /patch-notes returns 401 without token', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/patch-notes')
       .send(createBody)
       .expect(401);
 
+    expect(response.body).toEqual({
+      statusCode: 401,
+      message: expect.any(String),
+      error: 'Unauthorized',
+    });
     expect(create).not.toHaveBeenCalled();
   });
 
   it('POST /patch-notes returns 401 for invalid token', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/patch-notes')
       .set('Authorization', 'Bearer invalid')
       .send(createBody)
       .expect(401);
 
+    expect(response.body).toMatchObject({
+      statusCode: 401,
+      error: 'Unauthorized',
+    });
+    expect(typeof response.body.message).toBe('string');
     expect(create).not.toHaveBeenCalled();
   });
 
   it('POST /patch-notes returns 403 without admin claim', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/patch-notes')
       .set('Authorization', `Bearer ${USER_TOKEN}`)
       .send(createBody)
       .expect(403);
 
+    expect(response.body).toMatchObject({
+      statusCode: 403,
+      error: 'Forbidden',
+    });
+    expect(typeof response.body.message).toBe('string');
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -135,23 +150,35 @@ describe('PatchNotesController (e2e)', () => {
   });
 
   it('POST /patch-notes returns 400 for invalid version format', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/patch-notes')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ ...createBody, version: '1.2' })
       .expect(400);
 
+    expect(response.body).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+    });
+    expect(typeof response.body.message).toBe('string');
+    expect(Array.isArray(response.body.message)).toBe(false);
     expect(create).not.toHaveBeenCalled();
   });
 
   it('POST /patch-notes returns 409 when version already exists', async () => {
     create.mockRejectedValue({ code: 'P2002' });
 
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/patch-notes')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send(createBody)
       .expect(409);
+
+    expect(response.body).toMatchObject({
+      statusCode: 409,
+      error: 'Conflict',
+    });
+    expect(typeof response.body.message).toBe('string');
   });
 
   it('PATCH /patch-notes/:id updates a note (200)', async () => {
@@ -214,11 +241,17 @@ describe('PatchNotesController (e2e)', () => {
   });
 
   it('GET /patch-notes returns 400 for invalid version query', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .get('/patch-notes')
       .query({ version: 'latest' })
       .expect(400);
 
+    expect(response.body).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+    });
+    expect(typeof response.body.message).toBe('string');
+    expect(Array.isArray(response.body.message)).toBe(false);
     expect(findMany).not.toHaveBeenCalled();
   });
 });
