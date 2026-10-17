@@ -44,9 +44,7 @@ export class FirebaseAuthService implements OnModuleInit {
 
   async verifyIdToken(token: string): Promise<DecodedIdToken> {
     if (!this.app && getApps().length === 0) {
-      throw new ServiceUnavailableException(
-        'Firebase Admin is not configured',
-      );
+      throw new ServiceUnavailableException('Firebase Admin is not configured');
     }
     return getAuth().verifyIdToken(token);
   }

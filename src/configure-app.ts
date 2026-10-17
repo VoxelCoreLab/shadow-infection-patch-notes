@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
 
-function validationMessage(errors: { constraints?: Record<string, string> }[]): string {
+function validationMessage(
+  errors: { constraints?: Record<string, string> }[],
+): string {
   const parts = errors.flatMap((error) =>
     error.constraints ? Object.values(error.constraints) : [],
   );

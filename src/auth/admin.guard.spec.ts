@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { AdminGuard } from './admin.guard.js';
 import { FirebaseAuthService } from './firebase-auth.service.js';
 
@@ -28,9 +25,9 @@ describe('AdminGuard', () => {
 
   it('rejects missing Authorization header with 401', async () => {
     const ctx = contextWithAuth();
-    await expect(
-      guard.canActivate(ctx as never),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(guard.canActivate(ctx as never)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
     expect(verifyIdToken).not.toHaveBeenCalled();
   });
 
@@ -38,18 +35,18 @@ describe('AdminGuard', () => {
     verifyIdToken.mockRejectedValue(new Error('bad token'));
     const ctx = contextWithAuth('Bearer bad');
 
-    await expect(
-      guard.canActivate(ctx as never),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(guard.canActivate(ctx as never)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('rejects valid token without admin claim with 403', async () => {
     verifyIdToken.mockResolvedValue({ uid: 'u1', admin: false });
     const ctx = contextWithAuth('Bearer user-token');
 
-    await expect(
-      guard.canActivate(ctx as never),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(guard.canActivate(ctx as never)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 
   it('allows token with admin claim', async () => {
