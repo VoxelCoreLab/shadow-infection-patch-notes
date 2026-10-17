@@ -32,8 +32,8 @@ custom claim `admin`. Read endpoints stay public.
 | `npm run start:dev` | Dev server with watch |
 | `npm run start:prod` | Production server only (no migrate) |
 | `npm run build` | Production build |
-| `npm run format` / `format:check` | Prettier write / check |
-| `npm run lint` / `lint:check` | ESLint fix / check |
+| `npm run format` / `format:fix` | Prettier check (CI) / write |
+| `npm run lint` / `lint:fix` | ESLint check (CI) / fix |
 | `npm test` | Unit tests (Vitest) |
 | `npm run test:e2e` | End-to-end tests (Vitest) |
 | `npm run db:migrate` | Create/apply migrations (dev) |
