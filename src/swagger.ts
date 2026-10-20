@@ -7,7 +7,7 @@ export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
   const config = new DocumentBuilder()
     .setTitle('Shadow Infection Patch Notes API')
     .setDescription('REST API for Shadow Infection patch notes')
-    .setVersion('1.0')
+    .setVersion('1.0.0')
     .addBearerAuth(
       {
         type: 'http',
